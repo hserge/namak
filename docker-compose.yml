@@ -1,0 +1,35 @@
+version: "3.9"
+services:
+#  app:
+#    build:
+#      dockerfile: Dockerfile
+#      context: ./src
+#    volumes:
+#      - ./:/build
+
+#  redis:
+#    image: redis:7-alpine
+#    container_name: namak_redis
+#    restart: always
+#    ports:
+#      - "6376:6379"
+#    volumes:
+#      - "./.docker/redis/redis.conf:/usr/local/etc/redis/redis.conf"
+#      - "./.docker/data/redis:/data"
+#    #command: redis-server /usr/local/etc/redis/redis.conf --save 60 1 --loglevel warning --requirepass tuktuk
+#    command: redis-server --save 60 1 --loglevel warning
+
+  db:
+    image: postgres:15-alpine
+    container_name: ${PGSQL_CONTAINER_NAME}
+    restart: always
+    environment:
+      - POSTGRES_USERNAME=${PGSQL_USER}
+      - POSTGRES_PASSWORD=${PGSQL_PASSWORD}
+    env_file:
+      - .env
+    ports:
+      - '${PGSQL_PORT}:5432'
+    volumes:
+      - ./.docker/pgsql/init.sh:/docker-entrypoint-initdb.d/init.sh
+      - ./.docker/data/pgsql:/var/lib/postgresql/data
