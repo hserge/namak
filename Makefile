@@ -59,3 +59,5 @@ migrate_force_version: # make migrate_force_version version=1
 
 build:
 		go build -o ./bin -v
+test:
+		go test -v -cover ./...

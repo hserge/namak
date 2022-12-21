@@ -1,10 +1,11 @@
 package models
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 
-	"github.com/hserge/namak/app"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -20,48 +21,48 @@ type Email struct {
 	Container pgtype.JSONCodec   `json:"container"`
 }
 
-type Emails struct {
-	Emails []Email `json:"emails"`
+type EmailRepository struct {
+	db *pgx.Conn
 }
 
-type App app.App
+func NewEmailRepository(db *pgx.Conn) *EmailRepository {
+	return &EmailRepository{
+		db,
+	}
+}
 
-func (a *App) list() (Emails, error) {
-	rows, err := a.Db.Query(a.Ctx, "SELECT id, created_at, is_active, is_success, email, first_name, last_name, container FROM emails order by id desc")
+func (r *EmailRepository) All() ([]Email, error) {
+	rows, err := r.db.Query(context.Background(), "SELECT id, created_at, is_active, is_success, email, first_name, last_name, container FROM emails order by id desc")
 	if err != nil {
-		return Emails{}, err
+		return []Email{}, err
 	}
 	defer rows.Close()
 
-	result := Emails{}
+	var result []Email
 	for rows.Next() {
 		email := Email{}
 		err := rows.Scan(&email.Id, &email.CreatedAt, &email.IsActive, &email.IsSuccess, &email.Email, &email.FirstName, &email.LastName, &email.Container)
 		// Exit if we get an error
 		if err != nil {
-			return Emails{}, err
+			return []Email{}, err
 		}
-		result.Emails = append(result.Emails, email)
+		result = append(result, email)
 	}
 	return result, nil
 }
 
-func (a *App) get(id int) (Email, error) {
+func (r *EmailRepository) Get(id int) (Email, error) {
 	return Email{}, nil
 }
 
-func (e *Email) update(db *sql.DB) (Email, error) {
+func (r *EmailRepository) Update(db *sql.DB) (Email, error) {
 	return Email{}, errors.New("not implemented")
 }
 
-func (e *Email) delete(db *sql.DB) (bool, error) {
+func (r *EmailRepository) Delete(db *sql.DB) (bool, error) {
 	return true, errors.New("not implemented")
 }
 
-func (e *Email) create(db *sql.DB) (Email, error) {
+func (r *EmailRepository) Create(db *sql.DB) (Email, error) {
 	return Email{}, errors.New("not implemented")
-}
-
-func getEmails(db *sql.DB, start, count int) ([]Email, error) {
-	return nil, errors.New("not implemented")
 }

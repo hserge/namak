@@ -23,19 +23,29 @@ type App struct {
 func (a *App) Initialize(ctx context.Context, dsn string) {
 	a.Ctx = ctx
 	a.Srv = echo.New()
-	a.Srv.Pre(middleware.RemoveTrailingSlash())
-	a.Srv.Static("/", "static")
 
+	a.SetMiddlewares()
+	a.ConnectDb(dsn)
+	a.InitializeRoutes()
+}
+
+func (a *App) SetMiddlewares() {
+	// remove trailing slashes
+	a.Srv.Pre(middleware.RemoveTrailingSlash())
+	// set timeout for the request
 	a.Srv.Use(middleware.TimeoutWithConfig(middleware.TimeoutConfig{
 		Timeout: 30 * time.Second,
 	}))
+	// tag request with an id
 	a.Srv.Use(middleware.RequestID())
+	// gracefully recover
 	a.Srv.Use(middleware.Recover())
-
+	// dump body in log for debugging purposes
+	// TODO: make sure this runs only in dev
 	a.Srv.Use(middleware.BodyDump(func(c echo.Context, reqBody, resBody []byte) {
 		a.Log.Info().Interface("Request", reqBody).Interface("Response", resBody).Msg("BodyDumpLog")
 	}))
-
+	// det logger to zerolog
 	a.Log = zerolog.New(os.Stdout).With().Timestamp().Logger()
 	a.Srv.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
 		LogURI:    true,
@@ -49,14 +59,14 @@ func (a *App) Initialize(ctx context.Context, dsn string) {
 			return nil
 		},
 	}))
+}
 
+func (a *App) ConnectDb(dsn string) {
 	var err error
 	a.Db, err = pgx.Connect(a.Ctx, dsn)
 	if err != nil {
 		a.Log.Fatal().Err(err).Str("service", "App").Msgf("Unable to connect to database")
 	}
-
-	a.InitializeRoutes()
 }
 
 func (a *App) CloseDb() {
@@ -76,6 +86,8 @@ func (a *App) Start(addr string) {
 }
 
 func (a *App) InitializeRoutes() {
+	a.Srv.Static("/", "static")
+
 	a.Srv.GET("/", func(c echo.Context) error {
 		var version, hostname string
 		err := a.Db.QueryRow(a.Ctx, "SELECT VERSION() as version, pg_read_file('/etc/hostname') as hostname").Scan(&version, &hostname)
