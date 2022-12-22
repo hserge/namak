@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/elastic/go-sysinfo"
 	"github.com/jackc/pgx/v5"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -18,14 +19,25 @@ type App struct {
 	Srv *echo.Echo
 	Db  *pgx.Conn
 	Log zerolog.Logger
+	Cfg *Config
 }
 
-func (a *App) Initialize(ctx context.Context, dsn string) {
+func (a *App) InitializeConfig() {
+	var err error
+	a.Cfg, err = New()
+	if err != nil {
+		a.Log.Fatal().Err(err).Str("service", "App").Msgf("Unable to read configuration")
+	}
+}
+
+func (a *App) Initialize(ctx context.Context) {
 	a.Ctx = ctx
 	a.Srv = echo.New()
 
 	a.SetMiddlewares()
-	a.ConnectDb(dsn)
+	a.InitializeConfig()
+	a.ServerInfo()
+	a.ConnectDb(a.Cfg.Db.Dsn)
 	a.InitializeRoutes()
 }
 
@@ -61,12 +73,34 @@ func (a *App) SetMiddlewares() {
 	}))
 }
 
+func (a *App) ServerInfo() {
+	host, _ := sysinfo.Host()
+	memory, _ := host.Memory()
+	cpuTime, _ := host.CPUTime()
+
+	a.Log.Info().
+		Interface("Go", sysinfo.Go()).
+		Interface("HostInfo", host.Info()).
+		Interface("HostMemory", memory).
+		Interface("HostCPUTime", cpuTime).
+		Msg("System Information")
+}
+
 func (a *App) ConnectDb(dsn string) {
 	var err error
 	a.Db, err = pgx.Connect(a.Ctx, dsn)
 	if err != nil {
 		a.Log.Fatal().Err(err).Str("service", "App").Msgf("Unable to connect to database")
 	}
+
+	// get the db version
+	var version string
+	err = a.Db.QueryRow(a.Ctx, "SELECT VERSION()").Scan(&version)
+	if err != nil {
+		a.Log.Fatal().Err(err).Str("service", "App").Msgf("Unable to access database version")
+	}
+
+	a.Log.Info().Msgf("Connected to the database: %s", version)
 }
 
 func (a *App) CloseDb() {
