@@ -1,7 +1,6 @@
-package models
+package service
 
 import (
-	"context"
 	"testing"
 
 	"github.com/jackc/pgx/v5"
@@ -17,7 +16,7 @@ func TestEmailSuite(t *testing.T) {
 	suite.Run(t, new(EmailModelSuite))
 }
 
-func (s *EmailModelSuite) SetupSuite() {
-	var err error
-	s.db, err = pgx.Connect(context.TODO(), dsn)
-}
+//func (s *EmailModelSuite) SetupSuite() {
+//	var err error
+//	s.db, err = pgx.Connect(context.TODO(), app.App.)
+//}

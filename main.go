@@ -8,10 +8,5 @@ import (
 
 func main() {
 	ctx := context.Background()
-
-	a := app.App{}
-	a.Initialize(ctx)
-	defer a.CloseDb()
-
-	a.Start(":8888")
+	app.Initialize(ctx)
 }

@@ -49,13 +49,13 @@ pgsql_db_drop: pgsql_db_drop_db pgsql_db_drop_user
 
 # Migration (runs on local machine)
 migrate_create: # make migrate_create name=initial_migration
-		migrate -verbose -database $(PGSQL_DSN) create -ext sql -dir ./migrations $(name)
+		migrate -verbose -database $(PGSQL_DSN) create -ext sql -dir ./migration $(name)
 migrate:
-		migrate -verbose -path ./migrations -database $(PGSQL_DSN) up
+		migrate -verbose -path ./migration -database $(PGSQL_DSN) up
 migrate_down:
-		migrate -verbose -path ./migrations -database $(PGSQL_DSN) down
+		migrate -verbose -path ./migration -database $(PGSQL_DSN) down
 migrate_force_version: # make migrate_force_version version=1
-		migrate -verbose -path ./migrations -database $(PGSQL_DSN) force $(version)
+		migrate -verbose -path ./migration -database $(PGSQL_DSN) force $(version)
 
 build:
 		go build -o ./bin -v

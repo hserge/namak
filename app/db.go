@@ -2,17 +2,16 @@ package app
 
 import (
 	"context"
+	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/rs/zerolog/log"
 )
 
-var db *pgx.Conn
-
-func ConnectDb(ctx context.Context) {
-	var err error
-	// db, err = pgx.Connect(a.Ctx, dsn)
+func ConnectDb(ctx context.Context, dsn string) *pgxpool.Pool {
+	pool, err := pgxpool.New(ctx, dsn)
 	if err != nil {
-		log.Fatal().Err(err).Str("service", "App").Msgf("Unable to connect to database")
+		log.Fatal().Err(err).Str("service", "Server").Msgf("Unable to connect to database")
 	}
+
+	return pool
 }

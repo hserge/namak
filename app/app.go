@@ -2,83 +2,52 @@ package app
 
 import (
 	"context"
-	"net/http"
+	"github.com/edersohe/zflogger"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/recover"
+	"github.com/gofiber/fiber/v2/middleware/requestid"
+	"github.com/hserge/namak/handler"
 	"os"
-	"time"
 
 	"github.com/elastic/go-sysinfo"
 	"github.com/jackc/pgx/v5"
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
+	"github.com/joho/godotenv"
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 )
 
-type App struct {
-	Ctx context.Context
-	Srv *echo.Echo
-	Db  *pgx.Conn
-	Log zerolog.Logger
-	Cfg *Config
-}
+func Initialize(ctx context.Context) {
+	// logger
+	logger := GetLogger()
+	// config
+	InitConfig(logger)
+	// db
+	db := GetDb(ctx, logger, os.Getenv("PGSQL_DSN"))
+	defer CloseDb(ctx, db, logger)
 
-func (a *App) InitializeConfig() {
-	var err error
-	a.Cfg, err = New()
+	app := fiber.New()
+
+	app.Use(requestid.New())
+	app.Use(cors.New())
+	app.Use(recover.New())
+	app.Use(zflogger.Middleware(logger, nil))
+
+	ServerInfo(logger)
+	InitializeRoutes(app)
+
+	// Listen on port 3000
+	err := app.Listen(os.Getenv("APP_PORT"))
 	if err != nil {
-		a.Log.Fatal().Err(err).Str("service", "App").Msgf("Unable to read configuration")
+		logger.Fatal().Err(err).Str("service", "Server").Msgf("Unable to run server on port: %s", os.Getenv("APP_PORT"))
 	}
 }
 
-func (a *App) Initialize(ctx context.Context) {
-	a.Ctx = ctx
-	a.Srv = echo.New()
-
-	a.SetMiddlewares()
-	a.InitializeConfig()
-	a.ServerInfo()
-	a.ConnectDb(a.Cfg.Db.Dsn)
-	a.InitializeRoutes()
-}
-
-func (a *App) SetMiddlewares() {
-	// remove trailing slashes
-	a.Srv.Pre(middleware.RemoveTrailingSlash())
-	// set timeout for the request
-	a.Srv.Use(middleware.TimeoutWithConfig(middleware.TimeoutConfig{
-		Timeout: 30 * time.Second,
-	}))
-	// tag request with an id
-	a.Srv.Use(middleware.RequestID())
-	// gracefully recover
-	a.Srv.Use(middleware.Recover())
-	// dump body in log for debugging purposes
-	// TODO: make sure this runs only in dev
-	a.Srv.Use(middleware.BodyDump(func(c echo.Context, reqBody, resBody []byte) {
-		a.Log.Info().Interface("Request", reqBody).Interface("Response", resBody).Msg("BodyDumpLog")
-	}))
-	// det logger to zerolog
-	a.Log = zerolog.New(os.Stdout).With().Timestamp().Logger()
-	a.Srv.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
-		LogURI:    true,
-		LogStatus: true,
-		LogValuesFunc: func(c echo.Context, v middleware.RequestLoggerValues) error {
-			a.Log.Info().
-				Str("URI", v.URI).
-				Int("status", v.Status).
-				Msg("request")
-
-			return nil
-		},
-	}))
-}
-
-func (a *App) ServerInfo() {
+func ServerInfo(logger zerolog.Logger) {
 	host, _ := sysinfo.Host()
 	memory, _ := host.Memory()
 	cpuTime, _ := host.CPUTime()
 
-	a.Log.Info().
+	logger.Info().
 		Interface("Go", sysinfo.Go()).
 		Interface("HostInfo", host.Info()).
 		Interface("HostMemory", memory).
@@ -86,54 +55,67 @@ func (a *App) ServerInfo() {
 		Msg("System Information")
 }
 
-func (a *App) ConnectDb(dsn string) {
-	var err error
-	a.Db, err = pgx.Connect(a.Ctx, dsn)
+func InitConfig(logger zerolog.Logger) {
+	err := godotenv.Load()
 	if err != nil {
-		a.Log.Fatal().Err(err).Str("service", "App").Msgf("Unable to connect to database")
+		logger.Fatal().Err(err).Str("service", "Server").Msgf("Unable to load .env file")
+	}
+}
+
+func GetLogger() zerolog.Logger {
+	return zerolog.New(os.Stdout).With().Timestamp().Logger()
+}
+
+func GetDb(ctx context.Context, logger zerolog.Logger, dsn string) *pgx.Conn {
+	db, err := pgx.Connect(ctx, dsn)
+	if err != nil {
+		logger.Fatal().Err(err).Str("service", "Server").Msgf("Unable to connect to database")
 	}
 
 	// get the db version
 	var version string
-	err = a.Db.QueryRow(a.Ctx, "SELECT VERSION()").Scan(&version)
+	err = db.QueryRow(ctx, "SELECT VERSION()").Scan(&version)
 	if err != nil {
-		a.Log.Fatal().Err(err).Str("service", "App").Msgf("Unable to access database version")
+		logger.Fatal().Err(err).Str("service", "Server").Msgf("Unable to access database version")
 	}
 
-	a.Log.Info().Msgf("Connected to the database: %s", version)
+	logger.Info().Msgf("Connected to the database: %s", version)
+	return db
 }
 
-func (a *App) CloseDb() {
-	err := a.Db.Close(a.Ctx)
+func CloseDb(ctx context.Context, db *pgx.Conn, logger zerolog.Logger) {
+	err := db.Close(ctx)
 	if err != nil {
-		a.Log.
+		logger.
 			Fatal().
 			Err(err).
-			Str("service", "App").
+			Str("service", "Server").
 			Msgf("Unable to close database connection")
 	}
 }
 
-func (a *App) Start(addr string) {
-	err := a.Srv.Start(addr)
-	log.Fatal().Err(err).Str("service", "App").Msgf("Unable to run application")
-}
+func InitializeRoutes(app *fiber.App) {
+	app.Static("/", "static")
 
-func (a *App) InitializeRoutes() {
-	a.Srv.Static("/", "static")
+	// Create a /api/v1 endpoint
+	v1 := app.Group("/api/v1")
 
-	a.Srv.GET("/", func(c echo.Context) error {
-		var version, hostname string
-		err := a.Db.QueryRow(a.Ctx, "SELECT VERSION() as version, pg_read_file('/etc/hostname') as hostname").Scan(&version, &hostname)
-		if err != nil {
-			// a.Log.Err(err)
-			a.Log.Error().Msgf("Something is wrong: %v", err)
-		}
-		return c.String(http.StatusOK, "Hello World "+time.Now().Format(time.RFC3339)+"\nVersion:"+version+"\nHostname:"+hostname)
+	// Bind handlers
+	v1.Get("/emails", handler.EmailList)
+	//v1.Post("/users", handlers.UserCreate)
+
+	// Setup static files
+
+	// s.Srv.POST("/emails", createEmailHandler)
+	// s.Srv.GET("/emails/:id", readEmailHandler)
+	// s.Srv.PUT("/emails/:id", updateEmailHandler)
+	// s.Srv.DELETE("/emails/:id", deleteEmailHandler)
+
+	v1.Get("/error", func(c *fiber.Ctx) error {
+		a := 0
+		return c.JSON(1 / a)
 	})
 
-	// a.Srv.POST("/emails", createEmailHandler)
-	// a.Srv.GET("/emails/:id", readEmailHandler)
-	// a.Srv.PUT("/emails/:id", updateEmailHandler)
-	// a.Srv.DELETE("/emails/:id", deleteEmailHandler)
+	// Handle not founds
+	app.Use(handler.NotFound)
 }
