@@ -16,3 +16,12 @@ import (
 func GetEmails(c *fiber.Ctx) error {
 	return nil
 }
+
+func EmailList(c *fiber.Ctx) error {
+	var users []string
+
+	return c.JSON(fiber.Map{
+		"success": true,
+		"users":   users,
+	})
+}
