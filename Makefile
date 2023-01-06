@@ -57,6 +57,9 @@ migrate_down:
 migrate_force_version: # make migrate_force_version version=1
 		migrate -verbose -path ./migration -database $(PGSQL_DSN) force $(version)
 
+# swagger
+doc:
+		swag init --parseDependency --parseDepth 1
 build:
 		go build -o ./bin -v
 test:

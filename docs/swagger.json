@@ -1,0 +1,147 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "This is a sample swagger for Fiber",
+        "title": "Fiber Example API",
+        "termsOfService": "http://swagger.io/terms/",
+        "contact": {
+            "name": "API Support",
+            "email": "fiber@swagger.io"
+        },
+        "license": {
+            "name": "Apache 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+        },
+        "version": "1.0"
+    },
+    "host": "localhost:8888",
+    "basePath": "/",
+    "paths": {
+        "/v1/books": {
+            "get": {
+                "description": "Get all books.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Emails"
+                ],
+                "summary": "get all books",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.Email"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "model.Campaign": {
+            "type": "object"
+        },
+        "model.Email": {
+            "type": "object",
+            "properties": {
+                "campaign": {
+                    "$ref": "#/definitions/model.Campaign"
+                },
+                "container": {
+                    "$ref": "#/definitions/pgtype.JSONCodec"
+                },
+                "created_at": {
+                    "$ref": "#/definitions/pgtype.Timestamptz"
+                },
+                "email": {
+                    "$ref": "#/definitions/pgtype.Text"
+                },
+                "first_name": {
+                    "$ref": "#/definitions/pgtype.Text"
+                },
+                "id": {
+                    "$ref": "#/definitions/pgtype.Int8"
+                },
+                "is_active": {
+                    "$ref": "#/definitions/pgtype.Bool"
+                },
+                "is_success": {
+                    "$ref": "#/definitions/pgtype.Bool"
+                },
+                "last_name": {
+                    "$ref": "#/definitions/pgtype.Text"
+                }
+            }
+        },
+        "pgtype.Bool": {
+            "type": "object",
+            "properties": {
+                "bool": {
+                    "type": "boolean"
+                },
+                "valid": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "pgtype.InfinityModifier": {
+            "type": "integer",
+            "enum": [
+                1,
+                0,
+                -1
+            ],
+            "x-enum-varnames": [
+                "Infinity",
+                "Finite",
+                "NegativeInfinity"
+            ]
+        },
+        "pgtype.Int8": {
+            "type": "object",
+            "properties": {
+                "int64": {
+                    "type": "integer"
+                },
+                "valid": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "pgtype.JSONCodec": {
+            "type": "object"
+        },
+        "pgtype.Text": {
+            "type": "object",
+            "properties": {
+                "string": {
+                    "type": "string"
+                },
+                "valid": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "pgtype.Timestamptz": {
+            "type": "object",
+            "properties": {
+                "infinityModifier": {
+                    "$ref": "#/definitions/pgtype.InfinityModifier"
+                },
+                "time": {
+                    "type": "string"
+                },
+                "valid": {
+                    "type": "boolean"
+                }
+            }
+        }
+    }
+}

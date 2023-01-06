@@ -2,14 +2,16 @@ package app
 
 import (
 	"context"
-	"github.com/edersohe/zflogger"
+	"os"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/fiber/v2/middleware/requestid"
 	"github.com/hserge/namak/handler"
-	"os"
+	"github.com/hserge/namak/pkg/middleware"
 
+	swagger "github.com/arsmn/fiber-swagger/v2"
 	"github.com/elastic/go-sysinfo"
 	"github.com/jackc/pgx/v5"
 	"github.com/joho/godotenv"
@@ -27,10 +29,10 @@ func Initialize(ctx context.Context) {
 
 	app := fiber.New()
 
+	app.Use(middleware.Middleware(logger, nil))
 	app.Use(requestid.New())
 	app.Use(cors.New())
 	app.Use(recover.New())
-	app.Use(zflogger.Middleware(logger, nil))
 
 	ServerInfo(logger)
 	InitializeRoutes(app)
@@ -63,7 +65,7 @@ func InitConfig(logger zerolog.Logger) {
 }
 
 func GetLogger() zerolog.Logger {
-	return zerolog.New(os.Stdout).With().Timestamp().Logger()
+	return zerolog.New(os.Stdout).With().Timestamp().Logger().Level(zerolog.DebugLevel)
 }
 
 func GetDb(ctx context.Context, logger zerolog.Logger, dsn string) *pgx.Conn {
@@ -101,8 +103,8 @@ func InitializeRoutes(app *fiber.App) {
 	v1 := app.Group("/api/v1")
 
 	// Bind handlers
-	v1.Get("/emails", handler.EmailList)
-	//v1.Post("/users", handlers.UserCreate)
+	v1.Get("/emails", handler.GetEmails)
+	// v1.Post("/users", handlers.UserCreate)
 
 	// Setup static files
 
@@ -115,6 +117,14 @@ func InitializeRoutes(app *fiber.App) {
 		a := 0
 		return c.JSON(1 / a)
 	})
+
+	// Create routes group.
+	// swg := app.Group("/swagger")
+	// app.Get("/swag/*", swagger.HandlerDefault)
+	app.Get("/swag/*", swagger.New(swagger.Config{
+		URL:         "/swag/doc.json",
+		DeepLinking: false,
+	}))
 
 	// Handle not founds
 	app.Use(handler.NotFound)
