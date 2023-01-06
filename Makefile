@@ -23,7 +23,7 @@ stop:
 		docker-compose down -v
 
 start:
-		docker-compose -f docker-compose.yml up -d --remove-orphans
+		docker-compose -f docker-compose.yml up -d --remove-orphans db
 
 restart: stop start
 
@@ -56,6 +56,13 @@ migrate_down:
 		migrate -verbose -path ./migration -database $(PGSQL_DSN) down
 migrate_force_version: # make migrate_force_version version=1
 		migrate -verbose -path ./migration -database $(PGSQL_DSN) force $(version)
+
+test_migrate:
+		migrate -verbose -path ./migration -database $(TEST_PGSQL_DSN) up
+test_migrate_down:
+		migrate -verbose -path ./migration -database $(TEST_PGSQL_DSN) down
+test_migrate_force_version: # make migrate_force_version version=1
+		migrate -verbose -path ./migration -database $(TEST_PGSQL_DSN) force $(version)
 
 # swagger
 doc:
