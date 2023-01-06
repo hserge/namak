@@ -1,0 +1,98 @@
+basePath: /
+definitions:
+  model.Campaign:
+    type: object
+  model.Email:
+    properties:
+      campaign:
+        $ref: '#/definitions/model.Campaign'
+      container:
+        $ref: '#/definitions/pgtype.JSONCodec'
+      created_at:
+        $ref: '#/definitions/pgtype.Timestamptz'
+      email:
+        $ref: '#/definitions/pgtype.Text'
+      first_name:
+        $ref: '#/definitions/pgtype.Text'
+      id:
+        $ref: '#/definitions/pgtype.Int8'
+      is_active:
+        $ref: '#/definitions/pgtype.Bool'
+      is_success:
+        $ref: '#/definitions/pgtype.Bool'
+      last_name:
+        $ref: '#/definitions/pgtype.Text'
+    type: object
+  pgtype.Bool:
+    properties:
+      bool:
+        type: boolean
+      valid:
+        type: boolean
+    type: object
+  pgtype.InfinityModifier:
+    enum:
+    - 1
+    - 0
+    - -1
+    type: integer
+    x-enum-varnames:
+    - Infinity
+    - Finite
+    - NegativeInfinity
+  pgtype.Int8:
+    properties:
+      int64:
+        type: integer
+      valid:
+        type: boolean
+    type: object
+  pgtype.JSONCodec:
+    type: object
+  pgtype.Text:
+    properties:
+      string:
+        type: string
+      valid:
+        type: boolean
+    type: object
+  pgtype.Timestamptz:
+    properties:
+      infinityModifier:
+        $ref: '#/definitions/pgtype.InfinityModifier'
+      time:
+        type: string
+      valid:
+        type: boolean
+    type: object
+host: localhost:8888
+info:
+  contact:
+    email: fiber@swagger.io
+    name: API Support
+  description: This is a sample swagger for Fiber
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Fiber Example API
+  version: "1.0"
+paths:
+  /v1/books:
+    get:
+      consumes:
+      - application/json
+      description: Get all books.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Email'
+            type: array
+      summary: get all books
+      tags:
+      - Emails
+swagger: "2.0"

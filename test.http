@@ -1,0 +1,2 @@
+### GET request with a header
+GET http://localhost:8888/swagger
