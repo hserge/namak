@@ -14,7 +14,7 @@ type Email struct {
 	Email     pgtype.Text        `json:"email"`
 	FirstName pgtype.Text        `json:"first_name"`
 	LastName  pgtype.Text        `json:"last_name"`
-	Container pgtype.JSONCodec   `json:"container"`
+	Container map[string]string  `json:"container"`
 }
 
 type Emails struct {

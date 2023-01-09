@@ -20,11 +20,16 @@ func NewEmailService(ctx context.Context, dbPool *pgxpool.Pool) *EmailService {
 func (es *EmailService) Create(email *model.Email) error {
 	ctx, cancel := context.WithTimeout(es.ctx, 15*time.Second)
 	defer cancel()
-	return es.dbPool.QueryRow(ctx, `
+	conn, err := es.dbPool.Acquire(ctx)
+	if err != nil {
+		return err
+	}
+
+	return conn.QueryRow(ctx, `
         INSERT INTO emails (is_active, email, first_name, last_name, container) 
         VALUES ($1, $2, $3, $4, $5)
         RETURNING id, created_at, is_active, email, first_name, last_name, container`,
-		email.ID, email.CreatedAt, email.IsActive, email.Email, email.FirstName, email.LastName, email.Container).
+		email.IsActive, email.Email, email.FirstName, email.LastName, email.Container).
 		Scan(&email.ID, &email.CreatedAt, &email.IsActive, &email.Email, &email.FirstName, &email.LastName, &email.Container)
 }
 

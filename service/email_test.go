@@ -2,6 +2,9 @@ package service
 
 import (
 	"context"
+	"github.com/hserge/namak/model"
+	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/joho/godotenv"
 	"os"
 	"testing"
 
@@ -20,10 +23,29 @@ func TestEmailServiceTestSuite(t *testing.T) {
 
 func (s *EmailServiceTestSuite) SetupSuite() {
 	var err error
+
+	err = godotenv.Load("../.env")
+	if err != nil {
+		s.T().Log(err)
+	}
+
 	s.dbPool, err = pgxpool.New(context.TODO(), os.Getenv("TEST_PGSQL_DSN"))
 	if err != nil {
-		panic(err)
+		s.T().Log(err)
 	}
+}
+
+func (s *EmailServiceTestSuite) TestEmailService_Create() {
+	email := &model.Email{
+		IsActive:  pgtype.Bool{Bool: true, Valid: true},
+		Email:     pgtype.Text{String: "abc@email.com", Valid: true},
+		FirstName: pgtype.Text{String: "Marco", Valid: true},
+		LastName:  pgtype.Text{String: "Polo", Valid: true},
+		Container: map[string]string{"a": "1", "b": "bee"},
+	}
+	svc := NewEmailService(context.TODO(), s.dbPool)
+	err := svc.Create(email)
+	s.NoError(err)
 }
 
 func (s *EmailServiceTestSuite) TestEmailService_Get() {

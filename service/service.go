@@ -1,6 +1,8 @@
 package service
 
-type ICrudService[T Email | Campaign] interface {
+import "github.com/hserge/namak/model"
+
+type ICrudService[T model.Email | Campaign] interface {
 	All() ([]T, error)
 	Get(id int) (T, error)
 	Update(m *T) (T, error)
