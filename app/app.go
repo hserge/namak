@@ -24,7 +24,7 @@ func Initialize(ctx context.Context) {
 	// config
 	InitConfig(logger)
 	// db
-	db := GetDb(ctx, logger, os.Getenv("PGSQL_DSN"))
+	db := GetDb(ctx, logger, os.Getenv("APP_DSN"))
 	defer CloseDb(ctx, db, logger)
 
 	app := fiber.New()

@@ -2,9 +2,10 @@ package app
 
 import (
 	"context"
+	"os"
+
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rs/zerolog"
-	"os"
 )
 
 type Container struct {
@@ -27,7 +28,7 @@ func New(ctx context.Context, log zerolog.Logger, db *pgxpool.Pool) *Container {
 
 func GetDefaults(params GetDefaultParams) (ctx context.Context, log zerolog.Logger, pool *pgxpool.Pool, err error) {
 	if params.dsn == "" {
-		params.dsn = os.Getenv("PGSQL_DSN")
+		params.dsn = os.Getenv("APP_DSN")
 	}
 	// context
 	ctx = context.Background()

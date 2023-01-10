@@ -49,20 +49,20 @@ pgsql_db_drop: pgsql_db_drop_db pgsql_db_drop_user
 
 # Migration (runs on local machine)
 migrate_create: # make migrate_create name=initial_migration
-		migrate -verbose -database $(PGSQL_DSN) create -ext sql -dir ./migration $(name)
+		migrate -verbose -database $(APP_DSN) create -ext sql -dir ./migration $(name)
 migrate:
-		migrate -verbose -path ./migration -database $(PGSQL_DSN) up
+		migrate -verbose -path ./migration -database $(APP_DSN) up
 migrate_down:
-		migrate -verbose -path ./migration -database $(PGSQL_DSN) down
+		migrate -verbose -path ./migration -database $(APP_DSN) down
 migrate_force_version: # make migrate_force_version version=1
-		migrate -verbose -path ./migration -database $(PGSQL_DSN) force $(version)
+		migrate -verbose -path ./migration -database $(APP_DSN) force $(version)
 
 test_migrate:
-		migrate -verbose -path ./migration -database $(TEST_PGSQL_DSN) up
+		migrate -verbose -path ./migration -database $(TEST_DSN) up
 test_migrate_down:
-		migrate -verbose -path ./migration -database $(TEST_PGSQL_DSN) down
+		migrate -verbose -path ./migration -database $(TEST_DSN) down
 test_migrate_force_version: # make migrate_force_version version=1
-		migrate -verbose -path ./migration -database $(TEST_PGSQL_DSN) force $(version)
+		migrate -verbose -path ./migration -database $(TEST_DSN) force $(version)
 
 # swagger
 doc:
